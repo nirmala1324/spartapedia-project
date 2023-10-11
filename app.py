@@ -1,13 +1,31 @@
 # Handle the server -> server creation and its functions
 
+#Additional Dependency for Deployment
+import os
+from os.path import join, dirname
+from dotenv import load_dotenv
+
+# General Dependency
 from http import client
 from flask import Flask, render_template, request, jsonify
 from pymongo import MongoClient
 import requests
 from bs4 import BeautifulSoup
 
-client = MongoClient('mongodb+srv://nirmalapusparatna20031107:npr20031107@cluster0.cqhgovi.mongodb.net/')
-db = client.dbsparta
+# Read the .env file
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
+# Read credential data about database from .env file
+MONGODB_URI = os.environ.get("MONGODB_URI")
+DB_NAME = os.environ.get("DB_NAME")
+
+# ITS HARDCORE CODE
+""" client = MongoClient('mongodb+srv://nirmalapusparatna20031107:npr20031107@cluster0.cqhgovi.mongodb.net/')
+db = client.dbsparta """
+# Turned into this
+conn = MongoClient(MONGODB_URI)
+db = conn[DB_NAME]
 
 app = Flask(__name__)
 
