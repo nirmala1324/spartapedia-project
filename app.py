@@ -1,0 +1,58 @@
+# Handle the server -> server creation and its functions
+
+from http import client
+from flask import Flask, render_template, request, jsonify
+from pymongo import MongoClient
+import requests
+from bs4 import BeautifulSoup
+
+client = MongoClient('mongodb+srv://nirmalapusparatna20031107:npr20031107@cluster0.cqhgovi.mongodb.net/')
+db = client.dbsparta
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route("/movie", methods=["POST"])
+def movie_post():
+    receive_url = request.form['given_url']
+    receive_rate = request.form['given_rate']
+    receive_comm = request.form['given_comment']
+    
+    
+    # meta webscraping code
+    headers = {'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36'}
+
+    raw_data = requests.get(receive_url, headers=headers)
+    processed_data = BeautifulSoup(raw_data.text, 'html.parser')
+
+    og_image = processed_data.select_one('meta[property = "og:image"]')
+    og_title = processed_data.select_one('meta[property = "og:title"]')
+    og_description = processed_data.select_one('meta[name = "description"]')   
+
+    image = og_image['content']
+    title = og_title['content'].split(' (')[0]
+    description = og_description['content'].split(': ')[1] 
+    
+    # add to document for 'movie' collection
+    movie_doc = {
+        'title': title,
+        'img': image,
+        'desc': description,
+        'rate': receive_rate,
+        'comment': receive_comm
+    }
+    
+    db.movies.insert_one(movie_doc)
+    
+    return jsonify({'msg':'POST request success!'})
+
+@app.route("/movie", methods=["GET"])
+def movie_get():
+    movie_list = list(db.movies.find({},{'_id':False}))
+    return jsonify({'movies':movie_list})
+
+if __name__ == '__main__':
+    app.run('0.0.0.0', port=5000, debug=True)
